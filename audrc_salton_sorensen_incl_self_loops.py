@@ -87,7 +87,7 @@ def calculate_audrc(scores):
 def plot_discard_retain_curve(discard_proportion, tpr, audrc, method_label, color):
     plt.plot(discard_proportion, tpr, label=f'{method_label}: {audrc:.3f}', color=color)
 
-# NormCC normalization function using negative binomial regression
+# NormCC normalization function
 def normcc(df):
     df['log_site'] = np.log(df['Number of restriction sites'])
     df['log_length'] = np.log(df['Contig length'])
