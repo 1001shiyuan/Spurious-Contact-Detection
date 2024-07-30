@@ -34,7 +34,7 @@ def get_cutoff(scores, percentile=5):
 
 # Filter scores by cutoff
 def filter_scores_by_cutoff(scores, cutoff):
-    return [(i, j, score) for i, j, score in scores if score >= cutoff]
+    return [(i, j) for i, j, score in scores if score >= cutoff]
 
 # Calculate Salton Index
 def salton_index(neighbors):
@@ -96,12 +96,14 @@ def calculate_similarity_scores(contact_matrix, metric_function):
     return metric_function(neighbors)
 
 # Perform Leiden clustering 
-def perform_metacc_leiden_clustering(scores, random_seed):
-    _sources = [i for i, j, _ in scores]
-    _targets = [j for i, j, _ in scores]
-    _wei = [score for _, _, score in scores]
-    _vcount = max(max(_sources), max(_targets)) + 1
-    g = ig.Graph(_vcount, list(zip(_sources, _targets)), edge_attrs={'weight': _wei})
+def perform_metacc_leiden_clustering(contact_matrix, filtered_pairs, random_seed):
+    filtered_pairs_set = set(filtered_pairs)
+    row, col, data = contact_matrix.row, contact_matrix.col, contact_matrix.data
+    filtered_data = [data[i] for i in range(len(row)) if (row[i], col[i]) in filtered_pairs_set]
+    filtered_row = [row[i] for i in range(len(row)) if (row[i], col[i]) in filtered_pairs_set]
+    filtered_col = [col[i] for i in range(len(col)) if (row[i], col[i]) in filtered_pairs_set]
+    _vcount = max(max(filtered_row), max(filtered_col)) + 1
+    g = ig.Graph(_vcount, list(zip(filtered_row, filtered_col)), edge_attrs={'weight': filtered_data})
     part = leidenalg.find_partition(g, leidenalg.RBConfigurationVertexPartition, weights='weight', seed=random_seed, n_iterations=-1)
     dist_cluster = {v: part.membership[v] for v in range(_vcount)}
     predicted_labels = [dist_cluster.get(i, -1) for i in range(_vcount)]
@@ -149,8 +151,8 @@ def main():
         print(f"Calculating {metric_name} scores without self-loops")
         scores = calculate_similarity_scores(norm_contact_matrix_without_self_loops, metric_function)
         cutoff = get_cutoff(scores, 10)
-        filtered_scores = filter_scores_by_cutoff(scores, cutoff)
-        predicted_labels = perform_metacc_leiden_clustering(filtered_scores, random_seed)
+        filtered_pairs = filter_scores_by_cutoff(scores, cutoff)
+        predicted_labels = perform_metacc_leiden_clustering(norm_contact_matrix_without_self_loops, filtered_pairs, random_seed)
         ari, nmi, num_valid_bins = evaluate_clustering(true_labels, predicted_labels, contig_len, bin_size_threshold)
         results.append({
             'Metric': metric_name,

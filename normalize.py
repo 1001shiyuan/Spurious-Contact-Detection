@@ -15,9 +15,8 @@ metadata = pd.read_csv(metadata_path)
 def normcc(df):
     df['log_site'] = np.log(df['Number of restriction sites'])
     df['log_length'] = np.log(df['Contig length'])
-    df['log_covcc'] = np.log(df['Within-contig Hi-C contacts '])  # within-contig Hi-C contacts
-    df['signal'] = df['Across-contig Hi-C contacts']  # across-contig Hi-C contacts
-    
+    df['log_covcc'] = np.log(df['Within-contig Hi-C contacts '])
+    df['signal'] = df['Across-contig Hi-C contacts']
     exog = df[['log_site', 'log_length', 'log_covcc']]
     endog = df[['signal']]
     exog = sm.add_constant(exog)
@@ -38,23 +37,15 @@ def normalize_contact_matrix(contact_matrix, metadata, norm_params):
         norm_data.append(norm_value)
     return coo_matrix((norm_data, (contact_matrix.row, contact_matrix.col)), shape=contact_matrix.shape)
 
-# Main function to normalize contacts
+# Main function 
 def main():
-    # Load data
     contact_matrix = load_npz(contact_matrix_path).tocoo()
     metadata = pd.read_csv(metadata_path)
-    
-    # Perform NormCC normalization
     norm_params = normcc(metadata)
-    
-    # Normalize the contact matrix
     normalized_contacts = normalize_contact_matrix(contact_matrix, metadata, norm_params)
-    
     return normalized_contacts
 
 # Execute the main function and store the result
 normalized_contacts = main()
-
-# Saving the normalized contact matrix to NPZ file (sparse format)
 save_path_npz = os.path.join(script_dir, 'normalized_contact_matrix.npz')
 save_npz(save_path_npz, normalized_contacts)
