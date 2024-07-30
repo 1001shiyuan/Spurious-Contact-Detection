@@ -26,7 +26,7 @@ def extract_neighbors_and_weights(contact_matrix):
         neighbors[j][i] = float(weight)
     return neighbors
 
-# Calculate the 5% percentile cut-off
+# Calculate cut-off by percentile
 def get_cutoff(scores, percentile=5):
     scores_sorted = sorted(scores, key=lambda x: x[2])
     cutoff_index = int(len(scores_sorted) * percentile / 100)
